@@ -1,0 +1,34 @@
+name: Preprocessing Workflow
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  preprocessing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pandas scikit-learn joblib numpy
+
+      - name: Run preprocessing
+        working-directory: ./kriteria-1
+        run: |
+          python run_preprocessing.py
+
+      - name: Upload preprocessed dataset
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprocessed-data
+          path: kriteria-1/preprocessing/insurance_preprocessing/*.csv
