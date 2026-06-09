@@ -32,10 +32,16 @@ jobs:
         run: |
           pip install mlflow pandas scikit-learn joblib
 
+      # =========================
+      # RUN MLflow PROJECT
+      # =========================
       - name: Run MLflow Project
         run: |
-          mlflow run MLProject --env-manager=local
+          mlflow run MLproject --env-manager=local
 
+      # =========================
+      # DEBUG ARTIFACT
+      # =========================
       - name: Upload MLflow Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -43,7 +49,7 @@ jobs:
           path: mlruns/
 
       # =========================
-      # AMBIL RUN ID 
+      # AMBIL RUN ID
       # =========================
       - name: Get Latest Run ID
         run: |
@@ -51,18 +57,19 @@ jobs:
           echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
           echo "Run ID = $RUN_ID"
 
-      # DEBUG biar kalau error kelihatan
-      - name: Check MLruns Structure
+      # DEBUG MLruns
+      - name: Debug MLruns Structure
         run: |
           ls -R mlruns || true
 
       # =========================
-      # BUILD DOCKER IMAGE
+      # BUILD DOCKER IMAGE (FIX UTAMA)
       # =========================
       - name: Build Docker Image
         run: |
+          echo "Using RUN_ID=$RUN_ID"
           mlflow models build-docker \
-            --model-uri "runs:/$RUN_ID/model" \
+            --model-uri "runs:/$RUN_ID" \
             --name insurance_model
 
       - name: List Docker Images (Debug)
@@ -82,7 +89,7 @@ jobs:
       # =========================
       - name: Tag Docker Image
         run: |
-          docker tag insurance_model \
+          docker tag insurance_model:latest \
           ${{ secrets.DOCKER_HUB_USERNAME }}/insurance_model:latest
 
       # =========================
