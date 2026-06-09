@@ -4,6 +4,7 @@ from preprocessing.automate_Jaya import preprocess_data
 
 
 if __name__ == "__main__":
+    print("Preprocessing dimulai...")
     raw_path = "insurance_raw.csv"
     save_pipeline_path = "preprocessing/preprocessor.joblib"
     save_header_path = "preprocessing/insurance_preprocessing/columns.csv"
