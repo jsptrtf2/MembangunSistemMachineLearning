@@ -37,7 +37,8 @@ jobs:
       # =========================
       - name: Run MLflow Project
         run: |
-          mlflow run MLproject --env-manager=local
+          cd kriteria-3/MLproject
+          mlflow run . --env-manager=local
 
       # =========================
       # DEBUG ARTIFACT
