@@ -1,0 +1,94 @@
+name: MLflow CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  train-model:
+    runs-on: ubuntu-latest
+
+    env:
+      DOCKER_BUILDKIT: 1
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: |
+          pip install mlflow pandas scikit-learn joblib
+
+      - name: Run MLflow Project
+        run: |
+          mlflow run MLProject --env-manager=local
+
+      - name: Upload MLflow Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-artifacts
+          path: mlruns/
+
+      # =========================
+      # AMBIL RUN ID 
+      # =========================
+      - name: Get Latest Run ID
+        run: |
+          RUN_ID=$(ls mlruns | grep -E "^[a-f0-9]{32}$" | head -n 1)
+          echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+          echo "Run ID = $RUN_ID"
+
+      # DEBUG biar kalau error kelihatan
+      - name: Check MLruns Structure
+        run: |
+          ls -R mlruns || true
+
+      # =========================
+      # BUILD DOCKER IMAGE
+      # =========================
+      - name: Build Docker Image
+        run: |
+          mlflow models build-docker \
+            --model-uri "runs:/$RUN_ID/model" \
+            --name insurance_model
+
+      - name: List Docker Images (Debug)
+        run: docker images
+
+      # =========================
+      # LOGIN DOCKER HUB
+      # =========================
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      # =========================
+      # TAG IMAGE
+      # =========================
+      - name: Tag Docker Image
+        run: |
+          docker tag insurance_model \
+          ${{ secrets.DOCKER_HUB_USERNAME }}/insurance_model:latest
+
+      # =========================
+      # PUSH IMAGE
+      # =========================
+      - name: Push Docker Image
+        run: |
+          docker push \
+          ${{ secrets.DOCKER_HUB_USERNAME }}/insurance_model:latest
